@@ -43,8 +43,8 @@ fn main() {
     let count = TOTAL.load(Ordering::Relaxed);
     println!();
     took.describe("# Brute force");
-    println!("# Total positions: {}", positions.len());
-    println!("# Total tested: {}", count);
+    println!("# Possible positions: {}", positions.len());
+    println!("# Tested positions: {}", count);
     println!();
     println!("Done.");
 }
@@ -148,6 +148,11 @@ fn handle_complete(board: Board, found: &mut HashSet<Board>) {
         "Complete board should match target here"
     );
 
+    // White cannot be in check
+    if is_white_check(&board) {
+        return;
+    }
+
     // Print current board state if complete
     if !found.insert(board) {
         unreachable!("We should not find same position twice");
@@ -157,6 +162,36 @@ fn handle_complete(board: Board, found: &mut HashSet<Board>) {
     println!("# Position: {}", found.len());
     println!();
     println!("{}", board);
+}
+
+/// Check whether white is currently checked by black.
+fn is_white_check(board: &Board) -> bool {
+    // Find white kings
+    let kings: Vec<(usize, usize)> = board
+        .board
+        .iter()
+        .enumerate()
+        .flat_map(|(y, rank)| {
+            rank.iter()
+                .enumerate()
+                .filter(|(_, p)| p.0 == WHITE | KING)
+                .map(move |(x, _)| (x, y))
+        })
+        .collect();
+
+    assert_eq!(kings.len(), 2, "White should have two kings");
+
+    // For each black piece, ensure it doesn't check white's kings
+    board.board.iter().enumerate().any(|(y, rank)| {
+        rank.iter()
+            .enumerate()
+            .filter(|(_, p)| p.0 & BLACK > 0)
+            .any(|(x, p)| {
+                p.attacked_pieces(board, (x, y))
+                    .iter()
+                    .any(|attack| kings.contains(attack))
+            })
+    })
 }
 
 #[inline(always)]

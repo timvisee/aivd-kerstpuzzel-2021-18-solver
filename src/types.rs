@@ -1,5 +1,7 @@
 use std::fmt;
+use std::iter;
 use std::mem;
+use std::ops::Index;
 
 use colored::Colorize;
 
@@ -89,8 +91,87 @@ impl Piece {
         }
     }
 
+    /// Build a list of relative cell attack iterators.
+    ///
+    /// These may yield infinitely.
+    pub fn attacked_iters(self) -> Vec<Box<dyn Iterator<Item = (isize, isize)>>> {
+        match self {
+            _ if self.0 & KING > 0 => vec![
+                Box::new(iter::once((-1, -1))),
+                Box::new(iter::once((-1, 0))),
+                Box::new(iter::once((-1, 1))),
+                Box::new(iter::once((0, -1))),
+                Box::new(iter::once((0, 1))),
+                Box::new(iter::once((1, -1))),
+                Box::new(iter::once((1, 0))),
+                Box::new(iter::once((1, 1))),
+            ],
+            _ if self.0 & QUEEN > 0 => vec![
+                Box::new((1..).map(|n| (-n, 0))),
+                Box::new((1..).map(|n| (n, 0))),
+                Box::new((1..).map(|n| (0, -n))),
+                Box::new((1..).map(|n| (0, n))),
+                Box::new((1..).map(|n| (n, n))),
+                Box::new((1..).map(|n| (-n, n))),
+                Box::new((1..).map(|n| (n, -n))),
+                Box::new((1..).map(|n| (-n, -n))),
+            ],
+            _ if self.0 & ROOK > 0 => vec![
+                Box::new((1..).map(|n| (-n, 0))),
+                Box::new((1..).map(|n| (n, 0))),
+                Box::new((1..).map(|n| (0, -n))),
+                Box::new((1..).map(|n| (0, n))),
+            ],
+            _ if self.0 & BISHOP > 0 => vec![
+                Box::new((1..).map(|n| (n, n))),
+                Box::new((1..).map(|n| (-n, n))),
+                Box::new((1..).map(|n| (n, -n))),
+                Box::new((1..).map(|n| (-n, -n))),
+            ],
+            _ if self.0 & KNIGHT > 0 => vec![
+                Box::new(iter::once((-1, -2))),
+                Box::new(iter::once((1, -2))),
+                Box::new(iter::once((-2, 1))),
+                Box::new(iter::once((-2, -1))),
+                Box::new(iter::once((2, 1))),
+                Box::new(iter::once((2, -1))),
+                Box::new(iter::once((-1, 2))),
+                Box::new(iter::once((1, 2))),
+            ],
+            _ if self.0 & PAWN > 0 => vec![
+                Box::new(iter::once((-1, if self.0 & WHITE > 0 { -1 } else { 1 }))),
+                Box::new(iter::once((1, if self.0 & WHITE > 0 { -1 } else { 1 }))),
+            ],
+            _ if self.0 == 0 => vec![],
             _ => unreachable!(),
         }
+    }
+
+    /// Find positions of pieces that are attacked on the board by this piece.
+    ///
+    /// The board and the position of the current piece must be given.
+    pub fn attacked_pieces(self, board: &Board, pos: (usize, usize)) -> Vec<(usize, usize)> {
+        // Assert we are on the board
+        assert!(board[pos] == self);
+
+        // Go through each attack iter, find collision positions
+        self.attacked_iters()
+            .into_iter()
+            .map(|iter| {
+                iter.map(|p| {
+                    (
+                        (pos.0 as isize + p.0) as usize,
+                        (pos.1 as isize + p.1) as usize,
+                    )
+                })
+                .map(|p| board.get(p).map(|piece| (p, piece)))
+                .take_while(|p| p.is_some())
+                .flatten()
+                .find(|(_, piece)| !piece.is_empty())
+                .map(|(pos, _)| pos)
+            })
+            .flatten()
+            .collect()
     }
 }
 
@@ -142,6 +223,10 @@ impl Board {
         board
     }
 
+    pub fn get(&self, pos: (usize, usize)) -> Option<&Piece> {
+        self.board.get(pos.1).and_then(|rank| rank.get(pos.0))
+    }
+
     /// Get sum of rank values, `(white, black)`.
     pub fn rank_score(&self, rank: usize) -> (usize, usize) {
         (
@@ -187,8 +272,7 @@ impl Board {
     }
 
     pub fn target_diff(&self, ranks: RankTable, files: FileTable) -> (RankTable, FileTable) {
-        let mut ranks_diff = ranks.clone();
-        let mut files_diff = files.clone();
+        let (mut ranks_diff, mut files_diff) = (ranks, files);
 
         ranks_diff
             .iter_mut()
@@ -208,6 +292,14 @@ impl Board {
             });
 
         (ranks_diff, files_diff)
+    }
+}
+
+impl Index<(usize, usize)> for Board {
+    type Output = Piece;
+
+    fn index(&self, pos: (usize, usize)) -> &Self::Output {
+        self.get(pos).unwrap()
     }
 }
 
