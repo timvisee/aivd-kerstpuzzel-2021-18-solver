@@ -1,3 +1,9 @@
+mod types;
+
+use types::*;
+
 fn main() {
-    println!("Hello, world!");
+    let board = Board::default();
+
+    println!("{}", board);
 }
