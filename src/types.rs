@@ -1,6 +1,8 @@
 use std::fmt;
 use std::mem;
 
+use colored::Colorize;
+
 pub const WIDTH: usize = 8 + 8;
 pub const HEIGHT: usize = 8;
 
@@ -58,32 +60,35 @@ impl Piece {
     pub fn char(self) -> char {
         match self {
             _ if self.0 == 0 => '·',
-            _ if self.0 & WHITE > 0 && self.0 & BISHOP > 0 => '♝',
-            _ if self.0 & WHITE > 0 && self.0 & KING > 0 => '♚',
-            _ if self.0 & WHITE > 0 && self.0 & KNIGHT > 0 => '♞',
-            _ if self.0 & WHITE > 0 && self.0 & PAWN > 0 => '♟',
-            _ if self.0 & WHITE > 0 && self.0 & QUEEN > 0 => '♛',
-            _ if self.0 & WHITE > 0 && self.0 & ROOK > 0 => '♜',
-            _ if self.0 & BLACK > 0 && self.0 & BISHOP > 0 => '♗',
-            _ if self.0 & BLACK > 0 && self.0 & KING > 0 => '♔',
-            _ if self.0 & BLACK > 0 && self.0 & KNIGHT > 0 => '♘',
-            _ if self.0 & BLACK > 0 && self.0 & PAWN > 0 => '♙',
-            _ if self.0 & BLACK > 0 && self.0 & QUEEN > 0 => '♕',
-            _ if self.0 & BLACK > 0 && self.0 & ROOK > 0 => '♖',
+            _ if self.0 == WHITE | KING => '♚',
+            _ if self.0 == WHITE | QUEEN => '♛',
+            _ if self.0 == WHITE | ROOK => '♜',
+            _ if self.0 == WHITE | BISHOP => '♝',
+            _ if self.0 == WHITE | KNIGHT => '♞',
+            _ if self.0 == WHITE | PAWN => '♟',
+            _ if self.0 == BLACK | KING => '♔',
+            _ if self.0 == BLACK | QUEEN => '♕',
+            _ if self.0 == BLACK | ROOK => '♖',
+            _ if self.0 == BLACK | BISHOP => '♗',
+            _ if self.0 == BLACK | KNIGHT => '♘',
+            _ if self.0 == BLACK | PAWN => '♙',
+            _ => unreachable!(),
+        }
+    }
 
-            // TODO: this should work
-            // _ if self.0 == WHITE & KING => '♚',
-            // _ if self.0 == WHITE & QUEEN => '♛',
-            // _ if self.0 == WHITE & ROOK => '♜',
-            // _ if self.0 == WHITE & BISHOP => '♝',
-            // _ if self.0 == WHITE & KNIGHT => '♞',
-            // _ if self.0 == WHITE & PAWN => '♟',
-            // _ if self.0 == BLACK & KING => '♔',
-            // _ if self.0 == BLACK & QUEEN => '♕',
-            // _ if self.0 == BLACK & ROOK => '♖',
-            // _ if self.0 == BLACK & BISHOP => '♗',
-            // _ if self.0 == BLACK & KNIGHT => '♘',
-            // _ if self.0 == BLACK & PAWN => '♙',
+    pub fn format(self) -> String {
+        let c = self.char().to_string();
+        if self.0 == 0 {
+            c.bright_black().to_string()
+        } else if self.0 & WHITE > 0 {
+            c.yellow().to_string()
+        } else if self.0 & BLACK > 0 {
+            c.blue().to_string()
+        } else {
+            c
+        }
+    }
+
             _ => unreachable!(),
         }
     }
@@ -97,7 +102,7 @@ impl From<u8> for Piece {
 
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.char())
+        write!(f, "{}", self.format())
     }
 }
 

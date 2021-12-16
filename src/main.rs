@@ -9,10 +9,16 @@ use took::Timer;
 use input::*;
 use types::*;
 
+/// Whether to output color.
+pub const COLOR: bool = true;
+
 /// Tracks total number of tested positions.
 static TOTAL: AtomicUsize = AtomicUsize::new(0);
 
 fn main() {
+    // Configure colors
+    colored::control::set_override(COLOR);
+
     // Load board and pieces
     let board = Board::from_fen(INPUT);
     let mut pieces = PieceSet::from_fen(PIECES);
