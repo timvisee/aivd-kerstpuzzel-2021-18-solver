@@ -168,30 +168,23 @@ fn handle_complete(board: Board, found: &mut HashSet<Board>) {
 fn is_white_check(board: &Board) -> bool {
     // Find white kings
     let kings: Vec<(usize, usize)> = board
-        .board
-        .iter()
-        .enumerate()
-        .flat_map(|(y, rank)| {
-            rank.iter()
-                .enumerate()
-                .filter(|(_, p)| p.0 == WHITE | KING)
-                .map(move |(x, _)| (x, y))
-        })
+        .iter_pieces()
+        .filter(|(_, piece)| piece.0 == WHITE | KING)
+        .map(|(pos, _)| pos)
         .collect();
 
     assert_eq!(kings.len(), 2, "White should have two kings");
 
     // For each black piece, ensure it doesn't check white's kings
-    board.board.iter().enumerate().any(|(y, rank)| {
-        rank.iter()
-            .enumerate()
-            .filter(|(_, p)| p.0 & BLACK > 0)
-            .any(|(x, p)| {
-                p.attacked_pieces(board, (x, y))
-                    .iter()
-                    .any(|attack| kings.contains(attack))
-            })
-    })
+    board
+        .iter_pieces()
+        .filter(|(_, piece)| piece.0 & BLACK > 0)
+        .any(|(pos, piece)| {
+            piece
+                .attacked_pieces(board, pos)
+                .iter()
+                .any(|attack| kings.contains(attack))
+        })
 }
 
 #[inline(always)]

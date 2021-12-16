@@ -227,6 +227,19 @@ impl Board {
         self.board.get(pos.1).and_then(|rank| rank.get(pos.0))
     }
 
+    /// Iterate over all board cells.
+    pub fn iter(&self) -> impl Iterator<Item = ((usize, usize), Piece)> + '_ {
+        self.board
+            .iter()
+            .enumerate()
+            .flat_map(|(y, rank)| rank.iter().enumerate().map(move |(x, p)| ((x, y), *p)))
+    }
+
+    /// Iterate over all board pieces.
+    pub fn iter_pieces(&self) -> impl Iterator<Item = ((usize, usize), Piece)> + '_ {
+        self.iter().filter(|(_, p)| !p.is_empty())
+    }
+
     /// Get sum of rank values, `(white, black)`.
     pub fn rank_score(&self, rank: usize) -> (usize, usize) {
         (
