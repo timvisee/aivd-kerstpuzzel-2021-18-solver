@@ -42,6 +42,25 @@ impl Piece {
         })
     }
 
+    pub fn to_fen(self) -> Option<char> {
+        match self {
+            _ if self.0 == 0 => None,
+            _ if self.0 == WHITE | KING => Some('K'),
+            _ if self.0 == WHITE | QUEEN => Some('Q'),
+            _ if self.0 == WHITE | ROOK => Some('R'),
+            _ if self.0 == WHITE | BISHOP => Some('B'),
+            _ if self.0 == WHITE | KNIGHT => Some('N'),
+            _ if self.0 == WHITE | PAWN => Some('P'),
+            _ if self.0 == BLACK | KING => Some('k'),
+            _ if self.0 == BLACK | QUEEN => Some('q'),
+            _ if self.0 == BLACK | ROOK => Some('r'),
+            _ if self.0 == BLACK | BISHOP => Some('b'),
+            _ if self.0 == BLACK | KNIGHT => Some('n'),
+            _ if self.0 == BLACK | PAWN => Some('p'),
+            _ => unreachable!(),
+        }
+    }
+
     pub fn is_empty(self) -> bool {
         self.0 == 0
     }
@@ -223,6 +242,29 @@ impl Board {
         board
     }
 
+    pub fn to_fen(self) -> String {
+        self.board
+            .iter()
+            .map(|rank| rank_fen(rank))
+            .collect::<Vec<_>>()
+            .join("/")
+    }
+
+    pub fn to_fen_left_right(self) -> (String, String) {
+        (
+            self.board
+                .iter()
+                .map(|rank| rank_fen(&rank[0..WIDTH / 2]))
+                .collect::<Vec<_>>()
+                .join("/"),
+            self.board
+                .iter()
+                .map(|rank| rank_fen(&rank[WIDTH / 2..]))
+                .collect::<Vec<_>>()
+                .join("/"),
+        )
+    }
+
     pub fn get(&self, pos: (usize, usize)) -> Option<&Piece> {
         self.board.get(pos.1).and_then(|rank| rank.get(pos.0))
     }
@@ -331,6 +373,13 @@ impl fmt::Display for Board {
             write!(f, "{} ", (b'a' + i as u8) as char)?;
         }
 
+        writeln!(f)?;
+        let fen = self.to_fen();
+        let (fen_left, fen_right) = self.to_fen_left_right();
+        write!(f, "\nFEN: {} ", fen)?;
+        write!(f, "\nFEN L: {} ", fen_left)?;
+        write!(f, "\nFEN R: {} ", fen_right)?;
+
         Ok(())
     }
 }
@@ -417,4 +466,28 @@ impl fmt::Display for PieceSet {
         }
         Ok(())
     }
+}
+
+/// Generate FEN for single rank.
+fn rank_fen(rank: &[Piece]) -> String {
+    let mut rank_fen = String::new();
+    let mut i = 0;
+    while i < rank.len() {
+        // If empty, check how many empy, add count
+        let p = rank[i];
+        if !p.is_empty() {
+            rank_fen.push(p.to_fen().unwrap());
+            i += 1;
+        } else {
+            // Find how many empty
+            let empty = rank[i..rank.len()]
+                .iter()
+                .take_while(|p| p.is_empty())
+                .count();
+            rank_fen += &format!("{}", empty);
+            i += empty;
+        }
+    }
+
+    rank_fen
 }

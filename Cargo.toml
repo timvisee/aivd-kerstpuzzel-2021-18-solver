@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 colored = "2.0"
 rayon = "1.5"
+regex = "1.5"
 took = "0.1"
+uci = "0.1"

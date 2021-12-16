@@ -1,6 +1,10 @@
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use rayon::prelude::*;
+use regex::Regex;
+use uci::Engine;
+
 mod input;
 mod types;
 
@@ -32,7 +36,7 @@ fn main() {
     println!("To place: {}", pieces);
     println!();
     println!();
-    println!("# Start brute force");
+    println!("# Start position search...");
 
     let timer = Timer::new();
     let mut positions = HashSet::new();
@@ -42,11 +46,17 @@ fn main() {
     // Show test count
     let count = TOTAL.load(Ordering::Relaxed);
     println!();
-    took.describe("# Brute force");
+    took.describe("# Search");
     println!("# Possible positions: {}", positions.len());
     println!("# Tested positions: {}", count);
+    println!("# Done placing pieces");
+
     println!();
-    println!("Done.");
+    println!("# Filtering positions to mate in 2...");
+    println!();
+
+    // Filter all games to mate in 2
+    filter_positions_mate_2(positions.into_iter().collect());
 }
 
 /// Brute force given board with given set of pieces.
@@ -194,4 +204,116 @@ fn incr_total_count() {
     if count % 100_000_000 == 0 {
         println!("# Tested: {}", count);
     }
+}
+
+fn is_board_mate_2(board: &Board) -> Option<(Vec<String>, Vec<String>)> {
+    let (mut fen_left, mut fen_right) = board.to_fen_left_right();
+    fen_left += " b";
+    fen_right += " b";
+
+    let left = is_stockfish_mate_in(&fen_left, 2);
+    let right = is_stockfish_mate_in(&fen_right, 2);
+
+    if left.is_none() || right.is_none() {
+        return None;
+    }
+
+    left.zip(right)
+}
+
+fn is_stockfish_mate_in(fen: &str, moves: usize) -> Option<Vec<String>> {
+    let re = Regex::new(r" mate (\d+) ").unwrap();
+
+    let engine = Engine::new("stockfish").unwrap();
+    engine.set_position(fen).unwrap();
+
+    let options = engine
+        .command("go depth 2")
+        .unwrap()
+        .lines()
+        .skip(1)
+        .take(2)
+        .map(|info| match re.captures(info) {
+            // TODO: map here instead
+            Some(captures) => {
+                let val = captures.get(1).unwrap().as_str();
+                let val: usize = val.parse().unwrap();
+
+                if val == moves {
+                    let plys = info
+                        .split_once(" pv ")
+                        .unwrap()
+                        .1
+                        .split(' ')
+                        .map(|m| m.to_string())
+                        .collect::<Vec<String>>();
+
+                    // TODO: do not hardcode this here
+                    if plys.len() != 3 {
+                        return None;
+                    }
+
+                    Some(plys)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        })
+        .collect::<Vec<Option<Vec<String>>>>();
+
+    // All options must be some
+    if options.is_empty() || options.iter().any(|o| o.is_none()) {
+        return None;
+    }
+
+    // TODO: do not clone here?
+    options[0].clone()
+}
+
+fn filter_positions_mate_2(positions: Vec<Board>) {
+    let counter = AtomicUsize::new(0);
+
+    let timer = Timer::new();
+    let valid: Vec<(Board, (Vec<String>, Vec<String>))> = positions
+        .par_iter()
+        .filter_map(|board| {
+            let count = counter.fetch_add(1, Ordering::Relaxed) + 1;
+            if count % 100 == 0 {
+                println!(
+                    "Checking {} ({}%)",
+                    count,
+                    ((count as f32 / positions.len() as f32) * 100.0).round()
+                );
+            }
+
+            is_board_mate_2(board).map(|moves| (*board, moves))
+        })
+        .collect();
+    let took = timer.took();
+
+    println!();
+    println!();
+    took.describe("# Testing");
+    println!("# Valid positions:");
+    println!();
+
+    for (i, (board, (left, right))) in valid.iter().enumerate() {
+        println!();
+        println!("# Solution {}", i + 1);
+        println!();
+        println!("{}", board);
+        println!();
+        println!("Moves left: 1. ‥ {}+ 2. {} {}#", left[0], left[1], left[2]);
+        println!(
+            "Moves right: 1. ‥ {}+ 2. {} {}#",
+            right[0], right[1], right[2]
+        );
+    }
+
+    println!();
+    println!("# Done testing positions for mate in 2");
+    println!("# Valid solutions: {}", valid.len());
+    println!();
+    println!("Done.");
 }
