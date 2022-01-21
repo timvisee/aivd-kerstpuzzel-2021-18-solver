@@ -1,8 +1,6 @@
 use crate::types::*;
 
 pub const INPUT: &str = "r6k7r/pp4ppp3ppk//14K///PP6PP5P/2B1K3R6R";
-#[allow(unused)]
-pub const INPUT_JELLE: &str = "r6k7r/pp4ppp3ppk//14K//2N1R10q/PPq5PP5P/1RB1K3R6R";
 pub const PIECES: &str = "KKQQBNRRRRPPPPPPPPPPPkkqqbbnrrppppppppppp";
 
 /// Rank scores from 8 to 1, `(sum white, sum black)`.

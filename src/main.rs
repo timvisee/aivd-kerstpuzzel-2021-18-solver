@@ -224,7 +224,8 @@ fn is_board_mate_2(board: &Board) -> Option<(Vec<String>, Vec<String>)> {
 fn is_stockfish_mate_in(fen: &str, moves: usize) -> Option<Vec<String>> {
     let re = Regex::new(r" mate (\d+) ").unwrap();
 
-    let engine = Engine::new("stockfish").unwrap();
+    let engine = Engine::new("stockfish")
+        .expect("failed to initialise stockfish, make sure it is installed");
     engine.set_position(fen).unwrap();
 
     let options = engine
