@@ -75,5 +75,10 @@ cd aivd-kerstpuzzel-2021-18-solver
 cargo run --release
 ```
 
+## License
+
+This project is released under the MIT license.
+Check out the [LICENSE](LICENSE) file for more information.
+
 [aivd-kerstpuzzel]: https://www.aivd.nl/onderwerpen/aivd-kerstpuzzel
 [aivd-kerstpuzzel-download]: https://www.aivd.nl/onderwerpen/aivd-kerstpuzzel/documenten?trefwoord=&startdatum=01-12-2021&einddatum=31-12-2021&onderwerp=Alle+onderwerpen&type=Alle+documenten
