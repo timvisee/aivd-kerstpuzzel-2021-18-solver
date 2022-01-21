@@ -34,14 +34,17 @@ Here's a rough translation of the challenge:
 > To solve the puzzle, find the board position (FEN notation) and the moves to
 > play on both boards for mate in two using the notation format above.
 
-Find all challenges for 2022 [here][aivd-kerstpuzzel-download].
+Find all challenges for 2021 [here][aivd-kerstpuzzel-download].
 
 ## Solution
 
-The solver finds 8 possible board positions, all with the same set of moves for
-mate in two:
+The solver finds 8 possible board positions in about a minute,
+all with the same set of moves for mate in two:
 
 ![Solution](./res/solution.png)
+
+Note that the printed solution is in a slightly different format than given by
+the puzzle. I simply changed this by hand, as the actual solution is the same.
 
 Find all 8 solutions in: [`./output.txt`](./output.txt)
 
